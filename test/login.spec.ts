@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
-    
+import { RegisterPage } from '../pages/RegisterPage';
+import { newUser } from '../utils/testData';
+
 const EMAIL = process.env.TEST_EMAIL!;
 const PASSWORD = process.env.TEST_PASSWORD!;
 
@@ -10,12 +12,6 @@ test.describe('Login', () => {
   test.beforeEach(async ({ page }) => {
     login = new LoginPage(page);
     await login.open();
-  });
-
-  test('valid user can log in', async ({ page }) => {
-    await login.login(EMAIL, PASSWORD);
-    await expect(page).toHaveURL(/account/);
-   
   });
 
   test('wrong password shows an error', async () => {
@@ -42,4 +38,18 @@ test.describe('Login', () => {
     await login.login(EMAIL, '     ');
     await login.expectLoginError();
   });
-});
+
+  test('freshly registered user can log in', async ({ page }) => {
+    const user = newUser();
+    const register = new RegisterPage(page);
+    await register.open();
+    await register.fillForm(user);
+    await register.submit();
+    await expect(page).toHaveURL(/auth\/login/);
+
+    await login.login(user.email, user.password);
+    await expect(page).toHaveURL(/account/);
+  });
+
+})
+
